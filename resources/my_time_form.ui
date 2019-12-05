@@ -53,16 +53,6 @@
        </property>
       </spacer>
      </item>
-     <item>
-      <widget class="QPushButton" name="addnew_btn">
-       <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Refresh (F5)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-       <property name="text">
-        <string>Add New Preset</string>
-       </property>
-      </widget>
-     </item>
     </layout>
    </item>
    <item>

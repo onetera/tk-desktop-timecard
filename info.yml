@@ -23,7 +23,7 @@ configuration:
         - [sg_status_list, not_in, [fin,omt]]
         - filter_operator: any
           filters:
-            - [task_assignees, in, '{context.user.group}']
+            - [task_assignees, in, '{context.user}']
 
     my_tasks_extra_display_fields:
       type: list

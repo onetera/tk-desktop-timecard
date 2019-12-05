@@ -71,16 +71,16 @@ class NewTimeLogForm(QtGui.QDialog):
             duration = float(self.ui.doubleSpinBox.value()) * 60
             date = str(self.ui.dateEdit.date().toString("yyyy-MM-dd"))
             description = self.ui.textEdit.toPlainText()
-            extra_description = "logged by Timecard"
-            if description:
-                extra_description = ", " + extra_description
+            #extra_description = "logged by Timecard"
+            #if description:
+            #    extra_description = ", " + extra_description
             sg = self._app.context.tank.shotgun
             logger.debug("submit task {}, duration {}".format(task, duration))
             result = sg.create("TimeLog", {"duration": duration,
                                            "entity": task,
                                            "project": task['project'],
                                            "date": date,
-                                           "description": description + extra_description})
+                                           "description": description})
             logger.debug("create result: {}".format(result))
             # refresh the task model
             self.parent._on_refresh_triggered()

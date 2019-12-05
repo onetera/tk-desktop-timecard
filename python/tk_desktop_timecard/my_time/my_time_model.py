@@ -51,7 +51,10 @@ class MyTimeModel(QtCore.QAbstractListModel):
                 duration = "any "
             return "{0} ({1}hrs)".format(timelogevent.name, duration)
         elif role == QtCore.Qt.UserRole:  # return the whole python object
-            timelogevent = self.list[index.row()]
+            if type(index) == int:
+                timelogevent = self.list[index]
+            else:
+                timelogevent = self.list[index.row()]
             return timelogevent
         else:
             return
