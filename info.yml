@@ -24,6 +24,7 @@ configuration:
         - filter_operator: any
           filters:
             - [task_assignees, in, '{context.user}']
+            - [task_assignees, in, '{context.user.group}']
 
     my_tasks_extra_display_fields:
       type: list
