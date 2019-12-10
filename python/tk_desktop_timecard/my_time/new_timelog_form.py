@@ -80,6 +80,7 @@ class NewTimeLogForm(QtGui.QDialog):
                                            "entity": task,
                                            "project": task['project'],
                                            "date": date,
+                                           "sg_update_type": "User",
                                            "description": description})
             logger.debug("create result: {}".format(result))
             # refresh the task model
