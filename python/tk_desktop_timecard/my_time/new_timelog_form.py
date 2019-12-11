@@ -31,6 +31,8 @@ class NewTimeLogForm(QtGui.QDialog):
                                    (task['entity']['type'], task['entity']['name'], task['content']),
                                    userData=task)
         self.ui.dateEdit.setDate(self.date)
+        self.ui.dateEdit.setMinimumDate(self.date)
+        self.ui.dateEdit.setMaximumDate(self.date)
         self.ui.dateEdit.setCalendarPopup(True)
         self.ui.doubleSpinBox.setDecimals(2)
         self.ui.doubleSpinBox.setRange(0.00, self.hours * 2)
