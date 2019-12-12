@@ -23,7 +23,7 @@ class NewTimeLogForm(QtGui.QDialog):
         if self.hours < 0:
             self.custom = True
             self.hours = 8.0
-        self.date = data.timestamp
+        self.date = self._get_today(data.timestamp)
         self.ui = Ui_NewTimeLogForm()
         self.ui.setupUi(self)
         self.ui.project_cbBox.addItem("%s" % (task['project']['name']))
@@ -52,6 +52,15 @@ class NewTimeLogForm(QtGui.QDialog):
         self.ui.doubleSpinBox.setFocus()
 
         self.ui.buttonBox.accepted.connect(self.submitTimeLog)
+
+    def _get_today(self,date):
+        from datetime import datetime,timedelta
+        now = datetime.now()
+        if now.hour < 10 :
+            date = date - timedelta(1)
+
+        return date
+
 
     def update_spinbox(self, value):
         if not self.updateFromSpinbox:
