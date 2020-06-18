@@ -215,16 +215,31 @@ class MyTasksForm(QtGui.QWidget):
         project_filter.setData([['project', 'is', '{context.project}']])
         filters_group.addAction(project_filter)
         filters_menu.addAction(project_filter)
-        all_filter = QtGui.QAction('All Tasks', filters_menu,
-                                   checkable=True)
-        all_filter.setData([])
-        filters_group.addAction(all_filter)
-        filters_menu.addAction(all_filter)
-        facility_filter = QtGui.QAction('Facility Tasks', filters_menu,
-                                        checkable=True)
-        facility_filter.setData([['project.Project.name', 'is', 'Facility']])
-        filters_group.addAction(facility_filter)
-        filters_menu.addAction(facility_filter)
+        #all_filter = QtGui.QAction('All Tasks', filters_menu,
+        #                           checkable=True)
+        #all_filter.setData([])
+        #filters_group.addAction(all_filter)
+        #filters_menu.addAction(all_filter)
+        #facility_filter = QtGui.QAction('Facility Tasks', filters_menu,
+        #                                checkable=True)
+        #facility_filter.setData([['project.Project.name', 'is', 'Facility']])
+        #filters_group.addAction(facility_filter)
+        #filters_menu.addAction(facility_filter)
+        
+        
+        self._app = sgtk.platform.current_bundle()
+        sg = self._app.context.tank.shotgun
+        project_list = sg.find("Project",[['name','not_contains','_'],
+                                          ['sg_status','is','Active'],
+                                          ['id','is_not',self._app.context.project['id']],
+                                          ],['name'])
+        for project_ent in project_list:
+            temp_filter = QtGui.QAction(project_ent['name'], filters_menu,
+                                       checkable=True)
+            temp_filter.setData([['project', 'is', project_ent]])
+            filters_group.addAction(temp_filter)
+            filters_menu.addAction(temp_filter)
+
         if UI_filters_action:
             for filter_action in filters_menu.findChildren(QtGui.QAction):
                 if filter_action.text() == UI_filters_action.text():
