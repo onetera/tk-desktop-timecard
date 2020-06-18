@@ -209,7 +209,7 @@ class AppDialog(QtGui.QWidget):
                              parent=self,
                              bg_task_manager=self._task_manager)
         monitor_qobject_lifetime(model, "My Tasks Model")
-        model.async_refresh()
+        #model.async_refresh()
         logger.debug("Tasks Model Build Finished")
         return model
 
