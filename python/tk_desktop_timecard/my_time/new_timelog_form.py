@@ -1,5 +1,5 @@
 from math import ceil
-
+from datetime import timedelta
 import sgtk
 from sgtk.platform.qt import QtGui
 from ..ui.new_timelog import Ui_NewTimeLogForm
@@ -31,7 +31,7 @@ class NewTimeLogForm(QtGui.QDialog):
                                    (task['entity']['type'], task['entity']['name'], task['content']),
                                    userData=task)
         self.ui.dateEdit.setDate(self.date)
-        self.ui.dateEdit.setMinimumDate(self.date)
+        self.ui.dateEdit.setMinimumDate(self.date-timedelta(days=7))
         self.ui.dateEdit.setMaximumDate(self.date)
         self.ui.dateEdit.setCalendarPopup(True)
         self.ui.doubleSpinBox.setDecimals(2)
