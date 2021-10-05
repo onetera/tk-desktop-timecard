@@ -19,7 +19,7 @@ from datetime import date, timedelta
 import sgtk
 from sgtk.platform.qt import QtCore, QtGui
 from ..ui.my_tasks_form import Ui_MyTasksForm
-from .my_task_item_delegate import MyTaskItemDelegate
+from .management_item_delegate import ManagementItemDelegate
 from ..util import monitor_qobject_lifetime, map_to_source, get_source_model
 from ..entity_proxy_model import EntityProxyModel
 
@@ -68,7 +68,6 @@ class MyTasksTree(QtGui.QTreeView):
             bstream = data.retrieveData("application/x-timelogevent", bytearray)
             selected = pickle.loads(bstream)
             task = self.parent._get_selected_task()
-            print task
             if task:
                 logger.debug("Drop to task %s" % task)
                 timelog_dl = NewTimeLogForm(selected,
@@ -81,7 +80,7 @@ class MyTasksTree(QtGui.QTreeView):
             logger.error("dropEvent Exception: %s %s" % (e, traceback.format_exc()))
 
 
-class MyTasksForm(QtGui.QWidget):
+class ManagementForm(QtGui.QWidget):
     """
     My Tasks widget class
     """
@@ -96,12 +95,13 @@ class MyTasksForm(QtGui.QWidget):
         """
         QtGui.QWidget.__init__(self, parent)
         self.parent = parent
+        self._project = self.parent._app.context.project['name']
 
         # set up the UI
         self._ui = Ui_MyTasksForm()
         self._ui.setupUi(self)
 
-        search_label = "My Tasks"
+        search_label = "Management"
         self._ui.search_ctrl.set_placeholder_text("Search %s" % search_label)
         self._ui.search_ctrl.setToolTip("Press enter to complete the search")
         self.task_tree = MyTasksTree(self)
@@ -109,26 +109,18 @@ class MyTasksForm(QtGui.QWidget):
         self.task_tree.header().setVisible(False)
         # enable/hide the new task button if we have tasks and task creation
         # is allowed:
-        have_tasks = (tasks_model and tasks_model.get_entity_type() == "Task")
-        if have_tasks and allow_task_creation:
-            # enable and connect the new task button
-            self._ui.new_task_btn.clicked.connect(self._on_new_task)
-            self._ui.new_task_btn.setEnabled(False)
-        else:
-            self._ui.new_task_btn.hide()
+        self._ui.new_task_btn.hide()
         # Sets an item delete to show a list of tiles for tasks instead of
         # nodes in a tree.
         self._item_delegate = None
         if True:
             # create the item delegate - make sure we keep a reference to the
             # delegate otherwise things may crash later on!
-            self._item_delegate = MyTaskItemDelegate(
+            self._item_delegate = ManagementItemDelegate(
                 tasks_model.extra_display_fields, self.task_tree)
             monitor_qobject_lifetime(self._item_delegate)
             self.task_tree.setItemDelegate(self._item_delegate)
-        filter_model = EntityProxyModel(self, ["content", {"project": "name"},
-                                        {"entity": "name"}] +
-                                        tasks_model.extra_display_fields)
+        filter_model = EntityProxyModel(self, None)
         monitor_qobject_lifetime(filter_model, "%s entity filter model"
                                  % search_label)
         filter_model.setSourceModel(tasks_model)
@@ -193,17 +185,40 @@ class MyTasksForm(QtGui.QWidget):
         Get information of currently selected item
 
         :returns:   The selected task entity
+        
         """
+        template = {'project': {'type': 'Project', 'id': 120, 'name': 'westworld'}, 
+        'image': None, 
+        'entity': {'type': 'CustomNonProjectEntity04', 'id': 1, 'name': 'Meet'}, 
+        'content': 'Meeting', 
+        'time_logs_sum': 0, 
+        'type': 'CustomNonProjectEntity04', 
+        'id': 1}
+
+
+        project_name = self.parent.current_project
+
+
+        self._app = sgtk.platform.current_bundle()
+        sg = self._app.context.tank.shotgun
+        project  = sg.find_one("Project",[['name','is',project_name]],['name'])
+
+        template['project'] = project
         selected_indexes = self.task_tree.selectionModel().selectedIndexes()
         if len(selected_indexes) == 1:
             item = self._item_from_index(selected_indexes[0])
             tasks_model = get_source_model(selected_indexes[0].model())
             if item and tasks_model:
                 entity = tasks_model.get_entity(item)
-                return entity
+                template['entity']['id'] = entity['id']
+                template['entity']['name'] = entity['code']
+                template['content'] = entity['code']
+                template['id'] = entity['id']
+                return template
         return None
 
-    def _show_filters(self, UI_filters_action):
+    def _show_filters(self, UI_filters_action): 
+
         """
         Initialized filter menu and selected default action or previous action
 
