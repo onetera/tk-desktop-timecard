@@ -89,6 +89,7 @@ class AppDialog(QtGui.QWidget):
             osx_f5_refresh_action.triggered.connect(self._on_refresh_triggered)
             self.addAction(osx_f5_refresh_action)
             
+        self._on_refresh_triggered()
 
     def closeEvent(self, event):
         """
