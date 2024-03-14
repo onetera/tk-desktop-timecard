@@ -68,7 +68,7 @@ class MyTasksTree(QtGui.QTreeView):
             bstream = data.retrieveData("application/x-timelogevent", bytearray)
             selected = pickle.loads(bstream)
             task = self.parent._get_selected_task()
-            print task
+            print( task )
             if task:
                 logger.debug("Drop to task %s" % task)
                 timelog_dl = NewTimeLogForm(selected,
