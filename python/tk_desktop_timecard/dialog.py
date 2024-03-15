@@ -78,8 +78,8 @@ class AppDialog(QtGui.QWidget):
         self.ui.time_sum_label.setFont(QtGui.QFont("Arial", 80))
 
         # add refresh action with appropriate keyboard shortcut:
-        refresh_action = QtGui.QAction("Refresh", self)
-        refresh_action.setShortcut(QtGui.QKeySequence(QtGui.QKeySequence.Refresh))
+        refresh_action = QtGui.QAction("Refresh (F5)", self)
+        refresh_action.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_F5))
         refresh_action.triggered.connect(self._on_refresh_triggered)
         self.addAction(refresh_action)
         # on OSX, also add support for F5 (the default for OSX is Cmd+R)
@@ -89,7 +89,7 @@ class AppDialog(QtGui.QWidget):
             osx_f5_refresh_action.triggered.connect(self._on_refresh_triggered)
             self.addAction(osx_f5_refresh_action)
             
-        self._on_refresh_triggered()
+        QtCore.QTimer.singleShot(0, self._on_refresh_triggered)
 
     def closeEvent(self, event):
         """
