@@ -83,11 +83,11 @@ class AppDialog(QtGui.QWidget):
         refresh_action.triggered.connect(self._on_refresh_triggered)
         self.addAction(refresh_action)
         # on OSX, also add support for F5 (the default for OSX is Cmd+R)
-        if sys.platform == "darwin":
-            osx_f5_refresh_action = QtGui.QAction("Refresh (F5)", self)
-            osx_f5_refresh_action.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_F5))
-            osx_f5_refresh_action.triggered.connect(self._on_refresh_triggered)
-            self.addAction(osx_f5_refresh_action)
+        # if sys.platform == "darwin":
+        #     osx_f5_refresh_action = QtGui.QAction("Refresh (F5)", self)
+        #     osx_f5_refresh_action.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_F5))
+        #     osx_f5_refresh_action.triggered.connect(self._on_refresh_triggered)
+        #     self.addAction(osx_f5_refresh_action)
             
         QtCore.QTimer.singleShot(0, self._on_refresh_triggered)
 
