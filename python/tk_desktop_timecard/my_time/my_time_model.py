@@ -1,6 +1,7 @@
 import os
 import csv
 from math import ceil
+import sys
 
 import sgtk
 from datetime import timedelta, date
@@ -34,7 +35,12 @@ class MyTimeModel(QtCore.QAbstractListModel):
         super(MyTimeModel, self).__init__(parent)
         self.list = []
         preset_path = os.path.join(os.path.dirname(__file__), "preset.csv")
-        with open(preset_path, 'rb') as preset:
+        if sys.version_info.major == 2:
+            open_mode = 'rb'
+        else:
+            open_mode = 'r'
+
+        with open(preset_path, open_mode) as preset:
             presets = csv.reader(preset, delimiter=',')
             for row in presets:
                 row[1] = timedelta(seconds=int(row[1]))
