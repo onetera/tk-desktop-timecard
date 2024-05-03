@@ -1,5 +1,6 @@
 import sgtk
 from sgtk.platform.qt import QtCore, QtGui
+import sys
 
 if sys.version_info.major == 2:
     import cPickle as pick
