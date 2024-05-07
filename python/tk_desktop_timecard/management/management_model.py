@@ -42,14 +42,34 @@ class ManagementModel(ShotgunEntityModel):
         """
         self.extra_display_fields = extra_display_fields or []
 
-        filters = ['sg_use_filed','is','use']
+        filters = [['sg_use_filed','is','use']]
+
+        if project['name'] == '_Timelog':
+        # if project['name'] == 'RND':
+            filters.append({
+                'filter_operator': 'or',
+                'filters': [
+                    ['code', 'is', 'H_Dayoff'],
+                    ['code', 'is', 'Dayoff'],
+                    ['code', 'is', 'Management']
+                ]
+            })
+        else:
+            filters.append({
+                'filter_operator': 'and',
+                'filters':[
+                    ['code', 'is_not', 'H_Dayoff'],
+                    ['code', 'is_not', 'Dayoff'],
+                    ['code', 'is_not', 'Management']
+                ]
+            })
         #filters.extend(resolve_filters(my_tasks_filters))
         #filters.extend(resolve_filters(UI_filters))
 
         fields = ["code",'sg_use_filed','id']
         #fields.extend(self.extra_display_fields)
 
-        ShotgunEntityModel.__init__(self, "CustomNonProjectEntity04", [filters], ["code"], fields, parent,
+        ShotgunEntityModel.__init__(self, "CustomNonProjectEntity04", filters, ["code"], fields, parent,
                                     download_thumbs=True,
                                     bg_load_thumbs=True,
                                     bg_task_manager=bg_task_manager)
