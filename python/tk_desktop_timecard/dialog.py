@@ -112,7 +112,7 @@ class AppDialog(QtGui.QWidget):
             # if self._facility_tasks_model:
             #     self._facility_tasks_model.destroy()
             if self._management_model:
-                self._management_model.destory()
+                self._management_model.destroy()
             if self._my_time_model:
                 self._my_time_model.destroy()
             # shut down main threadpool
