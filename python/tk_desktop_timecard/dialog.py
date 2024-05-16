@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Copyright (c) 2013 Shotgun Software Inc.
 #
 # CONFIDENTIAL AND PROPRIETARY
@@ -69,7 +71,7 @@ class AppDialog(QtGui.QWidget):
         self.user = sgtk.util.get_current_user(self._app.sgtk)
         # self.ui.textBrowser.setText("Hello, %s!" % self.user['firstname'])
         # create my tasks form and my time form:
-        self.createTasksForm()
+        # self.createTasksForm()
         self.createManagementForm()
         self.createTimeForm()
         self.createTimelogTable()
@@ -103,10 +105,14 @@ class AppDialog(QtGui.QWidget):
         shotgun_globals.unregister_bg_task_manager(self._task_manager)
 
         try:
-            if self._my_tasks_model:
-                self._my_tasks_model.destroy()
+            ## 탭 두 개 추가시 window과부하 문제로 탭을 없앰
+            # if self._my_tasks_model:
+            #     self._my_tasks_model.destroy()
+            
             # if self._facility_tasks_model:
             #     self._facility_tasks_model.destroy()
+            if self._management_model:
+                self._management_model.destory()
             if self._my_time_model:
                 self._my_time_model.destroy()
             # shut down main threadpool
@@ -235,7 +241,7 @@ class AppDialog(QtGui.QWidget):
                              parent=self,
                              bg_task_manager=None)
         #monitor_qobject_lifetime(model, "Management Model")
-        model.async_refresh()
+        # model.async_refresh()
         logger.debug("Tasks Model Build Finished")
         return model
 
@@ -346,10 +352,15 @@ class AppDialog(QtGui.QWidget):
         self._app.sgtk.synchronize_filesystem_structure()
         self._app.log_debug("Path cache up to date!")
         self._get_time_sum()
-        if self._my_tasks_model:
-            self._my_tasks_model.async_refresh()
+
+        ## 탭 두 개 추가시 window과부하 문제로 탭을 없앰
+        # if self._my_tasks_model:
+        #     self._my_tasks_model.async_refresh()
+
         # if self._facility_tasks_model:
         #     self._facility_tasks_model.async_refresh()
+        if self._management_model:
+            self._management_model.async_refresh()
         if self._my_time_form:
             self._my_time_form.update_ui()
         if self._my_time_model:
