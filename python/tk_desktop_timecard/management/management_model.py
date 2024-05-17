@@ -14,6 +14,8 @@ Implementation of the 'My Tasks' data model
 import sgtk
 from sgtk.platform.qt import QtGui
 
+import sys
+
 from ..util import resolve_filters
 from ..framework_qtwidgets import shotgun_model
 
@@ -43,24 +45,34 @@ class ManagementModel(ShotgunEntityModel):
         self.extra_display_fields = extra_display_fields or []
 
         filters = [['sg_use_filed','is','use']]
-
-        if project['name'] == '_Timelog':
-        # if project['name'] == 'RND':
+        if sys.version_info.major == 2:
+            if project['name'] == '_Timelog':
+            # if project['name'] == 'RND':
+                filters.append({
+                    'filter_operator': 'or',
+                    'filters': [
+                        ['code', 'is', 'H_Dayoff'],
+                        ['code', 'is', 'Dayoff'],
+                        ['code', 'is', 'Management']
+                    ]
+                })
+            else:
+                filters.append({
+                    'filter_operator': 'and',
+                    'filters':[
+                        ['code', 'is_not', 'H_Dayoff'],
+                        ['code', 'is_not', 'Dayoff'],
+                        ['code', 'is_not', 'Management']
+                    ]
+                })
+        else:
             filters.append({
                 'filter_operator': 'or',
                 'filters': [
+                    ['code', 'is', 'Work'],
                     ['code', 'is', 'H_Dayoff'],
                     ['code', 'is', 'Dayoff'],
                     ['code', 'is', 'Management']
-                ]
-            })
-        else:
-            filters.append({
-                'filter_operator': 'and',
-                'filters':[
-                    ['code', 'is_not', 'H_Dayoff'],
-                    ['code', 'is_not', 'Dayoff'],
-                    ['code', 'is_not', 'Management']
                 ]
             })
         #filters.extend(resolve_filters(my_tasks_filters))

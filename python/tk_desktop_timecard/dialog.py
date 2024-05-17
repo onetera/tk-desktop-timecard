@@ -178,11 +178,22 @@ class AppDialog(QtGui.QWidget):
         try:
             self._management_model = self._build_management_model(
                 self._app.context.project, UI_filters_action)
-            self._management_form = ManagementForm(self._management_model,
-                                              UI_filters_action,
-                                              allow_task_creation=False,
-                                              parent=self)
+            
             # refresh tab
+            if UI_filters_action is not None:
+                self.ui.taskTabWidget.clear()
+                self.current_project = UI_filters_action.text()
+                
+                sg = self._app.context.tank.shotgun
+                project  = sg.find_one("Project",[['name','is',self.current_project]],['name'])
+
+                self._management_model = self._build_management_model(
+                    project, UI_filters_action)
+                
+            self._management_form = ManagementForm(self._management_model,
+                                            UI_filters_action,
+                                            allow_task_creation=False,
+                                            parent=self)
             self.ui.taskTabWidget.addTab(self._management_form, "Management")
         except Exception as e:
             logger.exception("Failed to Load my tasks, because %s \n %s"
@@ -231,7 +242,10 @@ class AppDialog(QtGui.QWidget):
         if UI_filters_action is None:
             UI_filters = [['project', 'is', '{context.project}']]
         else:
-            UI_filters = UI_filters_action.data()
+            if sys.version_info.major == 2:
+                UI_filters = UI_filters_action.data()
+            else:
+                UI_filters = UI_filters_action
         my_tasks_filters = self._app.get_setting("my_tasks_filters")
         model =ManagementModel(project,
                              self.user,

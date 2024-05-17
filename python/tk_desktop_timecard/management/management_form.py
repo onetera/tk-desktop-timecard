@@ -26,6 +26,9 @@ from ..entity_proxy_model import EntityProxyModel
 from ..my_time.my_time_model import timelogEvent
 from ..my_time.new_timelog_form import NewTimeLogForm
 
+import sys
+import os
+
 logger = sgtk.platform.get_logger(__name__)
 
 
@@ -195,9 +198,10 @@ class ManagementForm(QtGui.QWidget):
         'type': 'CustomNonProjectEntity04', 
         'id': 1}
 
-
-        project_name = self.parent.current_project
-
+        if sys.version_info.major == 2:
+            project_name = self.parent.current_project
+        else:
+            project_name = self._ui.filter_btn.currentText()
 
         self._app = sgtk.platform.current_bundle()
         sg = self._app.context.tank.shotgun
@@ -214,6 +218,11 @@ class ManagementForm(QtGui.QWidget):
                 template['entity']['name'] = entity['code']
                 template['content'] = entity['code']
                 template['id'] = entity['id']
+
+                if not ((template['project']['name'] == '_Timelog' and template['content'] in ['H_Dayoff', 'Dayoff', 'Management']) or
+                        (template['project']['name'] != '_Timelog' and template['content'] == 'Work')):
+                    msg_box(template['project']['name'], template['content'])
+                    template = None
                 return template
         return None
 
@@ -224,46 +233,76 @@ class ManagementForm(QtGui.QWidget):
 
         :param UI_filters_action: previous selected filter
         """
-        filters_menu = QtGui.QMenu()
-        filters_group = QtGui.QActionGroup(self)
-        project_filter = QtGui.QAction('Current Project Tasks', filters_menu,
-                                       checkable=True)
-        project_filter.setData([['project', 'is', '{context.project}']])
-        filters_group.addAction(project_filter)
-        filters_menu.addAction(project_filter)
-        #all_filter = QtGui.QAction('All Tasks', filters_menu,
-        #                           checkable=True)
-        #all_filter.setData([])
-        #filters_group.addAction(all_filter)
-        #filters_menu.addAction(all_filter)
-        #facility_filter = QtGui.QAction('Facility Tasks', filters_menu,
-        #                                checkable=True)
-        #facility_filter.setData([['project.Project.name', 'is', 'Facility']])
-        #filters_group.addAction(facility_filter)
-        #filters_menu.addAction(facility_filter)
-        
-        
         self._app = sgtk.platform.current_bundle()
         sg = self._app.context.tank.shotgun
-        project_list = sg.find("Project",[['name','not_contains','_'],
-                                          ['sg_status','is','Active'],
-                                          ['id','is_not',self._app.context.project['id']],
-                                          ],['name'])
-        for project_ent in project_list:
-            temp_filter = QtGui.QAction(project_ent['name'], filters_menu,
-                                       checkable=True)
-            temp_filter.setData([['project', 'is', project_ent]])
-            filters_group.addAction(temp_filter)
-            filters_menu.addAction(temp_filter)
+        project_list = sg.find("Project",
+                               [['name','not_contains','_'],
+                                ['sg_status','is','Active'],
+                                ['id','is_not',self._app.context.project['id']]],
+                                ['name'])
+        
+        timelog_project = sg.find_one("Project",
+                                      [['id', 'is', 212]],
+                                      ['name'])
+        
+        if timelog_project not in project_list:
+            project_list.insert(0, timelog_project)
+        
+        if os.getenv('USER') in ['w10296']:
+            rnd_project = sg.find_one("Project",
+                                      [['id', 'is', 686]],
+                                      ['name'])
+            if rnd_project not in project_list:
+                project_list.insert(0, rnd_project)
 
-        if UI_filters_action:
-            for filter_action in filters_menu.findChildren(QtGui.QAction):
-                if filter_action.text() == UI_filters_action.text():
-                    filter_action.setChecked(True)
+
+        if sys.version_info.major == 2:
+            filters_menu = QtGui.QMenu()
+            filters_group = QtGui.QActionGroup(self)
+            project_filter = QtGui.QAction('Current Project Tasks', filters_menu,
+                                        checkable=True)
+            project_filter.setData([['project', 'is', '{context.project}']])
+            filters_group.addAction(project_filter)
+            filters_menu.addAction(project_filter)
+            #all_filter = QtGui.QAction('All Tasks', filters_menu,
+            #                           checkable=True)
+            #all_filter.setData([])
+            #filters_group.addAction(all_filter)
+            #filters_menu.addAction(all_filter)
+            #facility_filter = QtGui.QAction('Facility Tasks', filters_menu,
+            #                                checkable=True)
+            #facility_filter.setData([['project.Project.name', 'is', 'Facility']])
+            #filters_group.addAction(facility_filter)
+            #filters_menu.addAction(facility_filter)
+            
+            for project_ent in project_list:
+                temp_filter = QtGui.QAction(project_ent['name'], filters_menu,
+                                        checkable=True)
+                temp_filter.setData([['project', 'is', project_ent]])
+                filters_group.addAction(temp_filter)
+                filters_menu.addAction(temp_filter)
+
+            if UI_filters_action:
+                for filter_action in filters_menu.findChildren(QtGui.QAction):
+                    if filter_action.text() == UI_filters_action.text():
+                        filter_action.setChecked(True)
+            else:
+                project_filter.setChecked(True)
+            self._ui.filter_btn.setMenu(filters_menu)
+            filters_group.triggered.connect(self._on_filter_changed)
+
         else:
-            project_filter.setChecked(True)
-        self._ui.filter_btn.setMenu(filters_menu)
-        filters_group.triggered.connect(self._on_filter_changed)
+            self._ui.filter_btn = QtGui.QComboBox(self)
+
+            current_project = sg.find_one("Project", 
+                                          [['id', 'is', self._app.context.project['id']]],
+                                          ['name'])
+            
+            project_list.insert(0, current_project)
+            
+            for project_ent in project_list:
+                self._ui.filter_btn.addItem(project_ent['name'], project_ent)
+                
 
     def _on_filter_changed(self, filter_action):
         """
@@ -274,7 +313,7 @@ class ManagementForm(QtGui.QWidget):
         try:
             logger.debug("filter changed to {}".format(filter_action.text()))
             logger.debug("filter: {}".format(filter_action.data()))
-            self.parent.createTasksForm(filter_action)
+            # self.parent.createTasksForm(filter_action)
             self.parent.createManagementForm(filter_action)
         except Exception as e:
             logger.error(e)
@@ -400,3 +439,11 @@ class ManagementForm(QtGui.QWidget):
 
         finally:
             self.blockSignals(signals_blocked)
+
+def msg_box(project_name, field):
+    msg = QtGui.QMessageBox.critical(
+        None,
+        'Worng type management',
+        '"{0}" project is not support "{1}"'.format(project_name, field)
+    )
+    return msg
