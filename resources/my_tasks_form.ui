@@ -75,7 +75,7 @@
      <item>
       <widget class="QPushButton" name="new_task_btn">
        <property name="text">
-        <string>+ New Task</string>
+        <string>Add Past Log</string>
        </property>
       </widget>
      </item>
