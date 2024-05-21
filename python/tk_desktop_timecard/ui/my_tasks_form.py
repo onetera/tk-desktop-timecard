@@ -51,6 +51,6 @@ class Ui_MyTasksForm(object):
     def retranslateUi(self, MyTasksForm):
         MyTasksForm.setWindowTitle(QtGui.QApplication.translate("MyTasksForm", "Form", None, QtGui.QApplication.UnicodeUTF8))
         self.filter_btn.setText(QtGui.QApplication.translate("MyTasksForm", "Filter", None, QtGui.QApplication.UnicodeUTF8))
-        self.new_task_btn.setText(QtGui.QApplication.translate("MyTasksForm", "+ New Task", None, QtGui.QApplication.UnicodeUTF8))
+        self.new_task_btn.setText(QtGui.QApplication.translate("MyTasksForm", "Add Past Log", None, QtGui.QApplication.UnicodeUTF8))
 
 from ..framework_qtwidgets import SearchWidget

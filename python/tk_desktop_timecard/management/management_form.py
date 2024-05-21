@@ -20,6 +20,7 @@ import sgtk
 from sgtk.platform.qt import QtCore, QtGui
 from ..ui.my_tasks_form import Ui_MyTasksForm
 from .management_item_delegate import ManagementItemDelegate
+from ..dump.dump_form import DumpForm
 from ..util import monitor_qobject_lifetime, map_to_source, get_source_model
 from ..entity_proxy_model import EntityProxyModel
 
@@ -99,6 +100,7 @@ class ManagementForm(QtGui.QWidget):
         QtGui.QWidget.__init__(self, parent)
         self.parent = parent
         self._project = self.parent._app.context.project['name']
+        self.filter_project_name = ''
 
         # set up the UI
         self._ui = Ui_MyTasksForm()
@@ -112,7 +114,8 @@ class ManagementForm(QtGui.QWidget):
         self.task_tree.header().setVisible(False)
         # enable/hide the new task button if we have tasks and task creation
         # is allowed:
-        self._ui.new_task_btn.hide()
+        self._ui.new_task_btn.clicked.connect(self._new_dump_task)
+        # self._ui.new_task_btn.hide()
         # Sets an item delete to show a list of tiles for tasks instead of
         # nodes in a tree.
         self._item_delegate = None
@@ -135,6 +138,19 @@ class ManagementForm(QtGui.QWidget):
         # connect context menu
         self.task_tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.task_tree.customContextMenuRequested.connect(self.open_menu)
+    
+    def _new_dump_task(self):
+        # logger.debug("click new_task_btn")
+        if sys.version_info.major == 2:
+            if len(self.filter_project_name) == 0:
+                project_name = self._app.context.project['name']
+            else:
+                project_name = self.filter_project_name
+        else:
+            project_name = self._ui.filter_btn.currentText()
+
+        dump = DumpForm(project_name, parent=self.parent)
+        dump.exec_()
 
     def open_menu(self, position):
         """
@@ -286,6 +302,7 @@ class ManagementForm(QtGui.QWidget):
                 for filter_action in filters_menu.findChildren(QtGui.QAction):
                     if filter_action.text() == UI_filters_action.text():
                         filter_action.setChecked(True)
+                        self.filter_project_name = filter_action.text()
             else:
                 project_filter.setChecked(True)
             self._ui.filter_btn.setMenu(filters_menu)
