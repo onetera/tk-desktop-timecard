@@ -12,7 +12,6 @@
 Implementation of the my tasks list widget consisting of a list view displaying the contents
 of a Shotgun data model of my tasks, a text search and a filter control.
 """
-import pickle
 import traceback
 from datetime import date, timedelta
 
@@ -29,6 +28,12 @@ from ..my_time.new_timelog_form import NewTimeLogForm
 
 import sys
 import os
+
+if sys.version_info.major == 2:
+    import cPickle as pick
+else:
+    import pickle as pick
+
 
 logger = sgtk.platform.get_logger(__name__)
 
@@ -70,7 +75,11 @@ class MyTasksTree(QtGui.QTreeView):
         try:
             data = event.mimeData()
             bstream = data.retrieveData("application/x-timelogevent", bytearray)
-            selected = pickle.loads(bstream)
+            if sys.version_info.major == 2:
+                byte_stream = bstream.data() if isinstance(bstream, QtCore.QByteArray) else bstream
+                selected = pick.loads(byte_stream)
+            else:
+                selected = pick.loads(bstream)
             task = self.parent._get_selected_task()
             if task:
                 logger.debug("Drop to task %s" % task)
