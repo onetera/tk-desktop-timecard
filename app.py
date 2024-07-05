@@ -13,6 +13,25 @@ import sys
 import sgtk
 import traceback
 
+module_list = ['openpyxl']
+
+def get_py_module(module_name):
+    dir_name = os.path.dirname(__file__)
+    module_path = os.path.join(dir_name, 'python', 'packages')
+
+    if sys.version_info.major == 2:
+        module_path = os.path.join(module_path, '{}_2'.format(module_name))
+    else:
+        module_path = os.path.join(module_path, '{}_3'.format(module_name))
+
+    return module_path
+
+def set_env():
+    for module in module_list:
+        sys.path.append(get_py_module(module))
+
+set_env()
+
 class Timecard(sgtk.platform.Application):
     """
     The app entry point. This class is responsible for intializing and tearing down

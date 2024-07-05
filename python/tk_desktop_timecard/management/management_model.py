@@ -21,6 +21,11 @@ from ..framework_qtwidgets import shotgun_model
 
 ShotgunEntityModel = shotgun_model.ShotgunEntityModel
 
+PYSIDE_VER = repr(QtGui.QWidget)
+if 'PySide2' in PYSIDE_VER:
+    PYSIDE_VER = 2
+else:
+    PYSIDE_VER = 1
 
 class ManagementModel(ShotgunEntityModel):
     """
@@ -45,33 +50,10 @@ class ManagementModel(ShotgunEntityModel):
         self.extra_display_fields = extra_display_fields or []
 
         filters = [['sg_use_filed','is','use']]
-        if sys.version_info.major == 2:
-            if project['name'] == '_Timelog':
-            # if project['name'] == 'RND':
-                filters.append({
-                    'filter_operator': 'or',
-                    'filters': [
-                        ['code', 'is', 'H_Dayoff'],
-                        ['code', 'is', 'Dayoff'],
-                        ['code', 'is', 'Management']
-                    ]
-                })
-            else:
-                filters.append({
-                    'filter_operator': 'and',
-                    'filters':[
-                        ['code', 'is_not', 'H_Dayoff'],
-                        ['code', 'is_not', 'Dayoff'],
-                        ['code', 'is_not', 'Management']
-                    ]
-                })
-        else:
-            filters.append({
+        filters.append({
                 'filter_operator': 'or',
                 'filters': [
                     ['code', 'is', 'Work'],
-                    ['code', 'is', 'H_Dayoff'],
-                    ['code', 'is', 'Dayoff'],
                     ['code', 'is', 'Management']
                 ]
             })

@@ -8,9 +8,15 @@ else:
     import pickle as pick
 
 from ..ui.my_time_form import Ui_MyTimeForm
+from ..dump.dump_form import DumpForm
 
 logger = sgtk.platform.get_logger(__name__)
 
+PYSIDE_VER = repr(QtGui.QWidget)
+if 'PySide2' in PYSIDE_VER:
+    PYSIDE_VER = 2
+else:
+    PYSIDE_VER = 1
 
 class MyTimeTree(QtGui.QListView):
     '''
@@ -84,7 +90,8 @@ class MyTimeForm(QtGui.QWidget):
         self.time_tree = MyTimeTree(self)
         self.time_tree.setModel(time_model)
         self._ui.verticalLayout.addWidget(self.time_tree)
-        self._ui.addnew_btn.clicked.connect(self._on_addnew)
+        self._ui.addnew_btn.hide()
+        # self._ui.addnew_btn.clicked.connect(self._on_addnew)
 
     def update_ui(self):
         """

@@ -1,25 +1,27 @@
 # -*- coding: utf-8 -*-
 
+import sys
+
 from sgtk.platform.qt import QtCore, QtGui
 from .dump_constant import *
 
 class DumpTableModel(QtCore.QAbstractTableModel):
-    def __init__(self, project_name, parent=None, *args):
+    def __init__(self, project_name, excel_array, parent=None, *args):
 
         QtCore.QAbstractTableModel.__init__(self, parent, *args)
         self.header = list(MODEL_KEYS.keys())
         # self.header = MODEL_KEYS.keys()
         self.project_name = project_name
-        if self.project_name != "_Timelog":
-            self.arraydata = [[False, self.project_name, '', 'Work', QtCore.QDate.currentDate().toString("yyyy-MM-dd"), '0', '']]
-        else:
-            self.arraydata = [[False, self.project_name, '', 'Management', QtCore.QDate.currentDate().toString("yyyy-MM-dd"), '0', '']]
+        self.arraydata = excel_array
+
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         return len(self.arraydata)
 
+
     def columnCount(self, parent=QtCore.QModelIndex()):
         return len(self.header)
+
 
     def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
         if role != QtCore.Qt.DisplayRole:
@@ -28,6 +30,7 @@ class DumpTableModel(QtCore.QAbstractTableModel):
         if orientation == QtCore.Qt.Horizontal:
             return self.header[section]
         return None
+
 
     def data(self, index, role):
         if not index.isValid():
@@ -40,16 +43,16 @@ class DumpTableModel(QtCore.QAbstractTableModel):
                 return self.arraydata[index.row()][index.column()]
             elif index.column() == 5:
                 value = self.arraydata[index.row()][index.column()]
+                if sys.version_info.major == 2 and value is not None:
+                    value = float(value)
                 try:
-                    if '.' in value:
+                    if value is None:
+                        return "0 hrs"
+                    if '.0' in str(value):
+                        return "{} hrs".format(int(value))
+                    else:
                         return "{} hrs".format(value)
-                    elif isinstance(int(value), int):
-                        if int(value) == 1:
-                            return "1 hr" 
-                        elif int(value) <= 16:
-                            return "{} hrs".format(value)
-                        else:
-                            return "0 hrs"
+                    
                 except ValueError:
                     return "0 hrs"
             else:
@@ -57,25 +60,31 @@ class DumpTableModel(QtCore.QAbstractTableModel):
         elif role == QtCore.Qt.EditRole:
             return self.arraydata[index.row()][index.column()]
         elif role == QtCore.Qt.CheckStateRole and index.column() == 0:
-            return QtCore.Qt.Checked if self.arraydata[index.row()][index.column()] else QtCore.Qt.Unchecked
+            checkbox = self.arraydata[index.row()][index.column()]
+            if isinstance(checkbox, QtGui.QCheckBox):
+                return QtCore.Qt.Checked if checkbox.isChecked() else QtCore.Qt.Unchecked
         return None
+
 
     def flags(self, index):
         if index.column() == 0:
             return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsUserCheckable
-        if index.column() == 1:
+        if index.column() == 6:
             return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
         else:
             return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
+
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         if not index.isValid():
             return False
         
         if role == QtCore.Qt.CheckStateRole and index.column() == 0:
-            self.arraydata[index.row()][index.column()] = value
-            self.dataChanged.emit(index, index)
-            return True
+            checkbox = self.arraydata[index.row()][index.column()]
+            if isinstance(checkbox, QtGui.QCheckBox):
+                checkbox.setChecked(value == QtCore.Qt.Checked)
+                self.dataChanged.emit(index, index)
+                return True
         elif role == QtCore.Qt.EditRole and index.column() == 4:
             self.arraydata[index.row()][index.column()] = value
             self.dataChanged.emit(index, index)
@@ -86,15 +95,12 @@ class DumpTableModel(QtCore.QAbstractTableModel):
             return True
         return False
 
+
     def add_Item(self):
-        if self.project_name != "_Timelog":
-            self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), self.rowCount())
-            self.arraydata.append([False, self.project_name, '', 'Work', QtCore.QDate.currentDate().toString("yyyy-MM-dd"), '0', ''])
-            self.endInsertRows()
-        else:
-            self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), self.rowCount())
-            self.arraydata.append([False, self.project_name, '', 'Management', QtCore.QDate.currentDate().toString("yyyy-MM-dd"), '0', ''])
-            self.endInsertRows()
+        self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), self.rowCount())
+        self.arraydata.append([False, '', '', '', QtCore.QDate(2024, 4, 30).toString("yyyy-MM-dd"), '0', self.project_name, ''])
+        self.endInsertRows()
+
 
     def del_Item(self):
         for row in reversed(range(len(self.arraydata))):
@@ -102,6 +108,7 @@ class DumpTableModel(QtCore.QAbstractTableModel):
                 self.beginRemoveRows(QtCore.QModelIndex(), row, row)
                 self.arraydata.pop(row)
                 self.endRemoveRows()
+
     
     def get_checked_rows(self):
         checked_rows = []
@@ -111,3 +118,9 @@ class DumpTableModel(QtCore.QAbstractTableModel):
         return checked_rows
 
 
+    def has_specific_values_in_column(self, column, values):
+        found = False
+        for row in range(self.rowCount()):
+            if self.arraydata[row][column] in values:
+                found = True
+            return found

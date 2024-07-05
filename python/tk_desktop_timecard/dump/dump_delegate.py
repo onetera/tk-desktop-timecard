@@ -8,16 +8,25 @@ class ComboBoxDelegate(QtGui.QItemDelegate):
         super(ComboBoxDelegate, self).__init__(parent)
 
     def createEditor(self, parent, option=None, index=None):
-        combo = QtGui.QComboBox(parent)
-        combo.addItems(["Management", "Dayoff", "H_dayoff"])
-        return combo
+        if index.data() in [u'Work', u'Management']:
+            combo = QtGui.QComboBox(parent)
+            combo.addItems(["Work", "Management"])
+            return combo
+        return super(ComboBoxDelegate, self).createEditor(parent, option, index)
 
     def setEditorData(self, editor, index):
         value = index.model().data(index, QtCore.Qt.EditRole)
-        editor.setCurrentIndex(editor.findText(value))
+        if isinstance(editor, QtGui.QComboBox):
+            editor.setCurrentIndex(editor.findText(value))
+        else:
+            super(ComboBoxDelegate, self).setEditorData(editor, index)
+
 
     def setModelData(self, editor, model, index):
-        model.setData(index, editor.currentText(), QtCore.Qt.EditRole)
+        if isinstance(editor, QtGui.QComboBox):
+            model.setData(index, editor.currentText(), QtCore.Qt.EditRole)
+        else:
+            super(ComboBoxDelegate, self).setModelData(editor, model, index)
 
     def updateEditorGeometry(self, editor, option, index=None):
         editor.setGeometry(option.rect)
