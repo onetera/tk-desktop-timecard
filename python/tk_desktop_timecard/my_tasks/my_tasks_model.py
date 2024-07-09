@@ -14,6 +14,12 @@ Implementation of the 'My Tasks' data model
 import sgtk
 from sgtk.platform.qt import QtGui
 
+PYSIDE_VER = repr(QtGui.QWidget)
+if 'PySide2' in PYSIDE_VER:
+    PYSIDE_VER = 2
+else:
+    PYSIDE_VER = 1
+
 from ..util import resolve_filters
 from ..framework_qtwidgets import shotgun_model
 

@@ -12,7 +12,6 @@
 Implementation of the my tasks list widget consisting of a list view displaying the contents
 of a Shotgun data model of my tasks, a text search and a filter control.
 """
-import pickle
 import traceback
 from datetime import date, timedelta
 
@@ -20,13 +19,28 @@ import sgtk
 from sgtk.platform.qt import QtCore, QtGui
 from ..ui.my_tasks_form import Ui_MyTasksForm
 from .my_task_item_delegate import MyTaskItemDelegate
+from ..dump.dump_form import DumpForm
 from ..util import monitor_qobject_lifetime, map_to_source, get_source_model
 from ..entity_proxy_model import EntityProxyModel
 
 from ..my_time.my_time_model import timelogEvent
 from ..my_time.new_timelog_form import NewTimeLogForm
 
+import os
+import sys
+
+if sys.version_info.major == 2:
+    import cPickle as pick
+else:
+    import pickle as pick
+
 logger = sgtk.platform.get_logger(__name__)
+
+PYSIDE_VER = repr(QtGui.QWidget)
+if 'PySide2' in PYSIDE_VER:
+    PYSIDE_VER = 2
+else:
+    PYSIDE_VER = 1
 
 
 class MyTasksTree(QtGui.QTreeView):
@@ -66,7 +80,11 @@ class MyTasksTree(QtGui.QTreeView):
         try:
             data = event.mimeData()
             bstream = data.retrieveData("application/x-timelogevent", bytearray)
-            selected = pickle.loads(bstream)
+            if sys.version_info.major == 2:
+                byte_stream = bstream.data() if isinstance(bstream, QtCore.QByteArray) else bstream
+                selected = pick.loads(byte_stream)
+            else:
+                selected = pick.loads(bstream)
             task = self.parent._get_selected_task()
             print( task )
             if task:
@@ -96,6 +114,7 @@ class MyTasksForm(QtGui.QWidget):
         """
         QtGui.QWidget.__init__(self, parent)
         self.parent = parent
+        self.filter_project_name = ''
 
         # set up the UI
         self._ui = Ui_MyTasksForm()
@@ -109,13 +128,15 @@ class MyTasksForm(QtGui.QWidget):
         self.task_tree.header().setVisible(False)
         # enable/hide the new task button if we have tasks and task creation
         # is allowed:
-        have_tasks = (tasks_model and tasks_model.get_entity_type() == "Task")
-        if have_tasks and allow_task_creation:
-            # enable and connect the new task button
-            self._ui.new_task_btn.clicked.connect(self._on_new_task)
-            self._ui.new_task_btn.setEnabled(False)
-        else:
-            self._ui.new_task_btn.hide()
+
+        # have_tasks = (tasks_model and tasks_model.get_entity_type() == "Task")
+        # if have_tasks and allow_task_creation:
+        #     # enable and connect the new task button
+        #     self._ui.new_task_btn.clicked.connect(self._on_new_task)
+        #     self._ui.new_task_btn.setEnabled(False)
+        # else:
+        #     self._ui.new_task_btn.hide()
+        self._ui.new_task_btn.clicked.connect(self._new_dump_task)
         # Sets an item delete to show a list of tiles for tasks instead of
         # nodes in a tree.
         self._item_delegate = None
@@ -140,6 +161,19 @@ class MyTasksForm(QtGui.QWidget):
         # connect context menu
         self.task_tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.task_tree.customContextMenuRequested.connect(self.open_menu)
+
+    def _new_dump_task(self):
+        # logger.debug("click new_task_btn")
+        if sys.version_info.major == 2:
+            if len(self.filter_project_name) == 0:
+                project_name = self._app.context.project['name']
+            else:
+                project_name = self.filter_project_name
+        else:
+            project_name = self._ui.filter_btn.currentText()
+
+        dump = DumpForm(project_name, parent=self.parent)
+        dump.exec_()
 
     def open_menu(self, position):
         """
@@ -209,46 +243,105 @@ class MyTasksForm(QtGui.QWidget):
 
         :param UI_filters_action: previous selected filter
         """
-        filters_menu = QtGui.QMenu()
-        filters_group = QtGui.QActionGroup(self)
-        project_filter = QtGui.QAction('Current Project Tasks', filters_menu,
-                                       checkable=True)
-        project_filter.setData([['project', 'is', '{context.project}']])
-        filters_group.addAction(project_filter)
-        filters_menu.addAction(project_filter)
-        #all_filter = QtGui.QAction('All Tasks', filters_menu,
-        #                           checkable=True)
-        #all_filter.setData([])
-        #filters_group.addAction(all_filter)
-        #filters_menu.addAction(all_filter)
-        #facility_filter = QtGui.QAction('Facility Tasks', filters_menu,
-        #                                checkable=True)
-        #facility_filter.setData([['project.Project.name', 'is', 'Facility']])
-        #filters_group.addAction(facility_filter)
-        #filters_menu.addAction(facility_filter)
-        
-        
         self._app = sgtk.platform.current_bundle()
         sg = self._app.context.tank.shotgun
         project_list = sg.find("Project",[['name','not_contains','_'],
-                                          ['sg_status','is','Active'],
-                                          ['id','is_not',self._app.context.project['id']],
-                                          ],['name'])
-        for project_ent in project_list:
-            temp_filter = QtGui.QAction(project_ent['name'], filters_menu,
-                                       checkable=True)
-            temp_filter.setData([['project', 'is', project_ent]])
-            filters_group.addAction(temp_filter)
-            filters_menu.addAction(temp_filter)
+                                        ['sg_status','is','Active'],
+                                        ['id','is_not',self._app.context.project['id']],
+                                        ],['name'])
 
-        if UI_filters_action:
-            for filter_action in filters_menu.findChildren(QtGui.QAction):
-                if filter_action.text() == UI_filters_action.text():
-                    filter_action.setChecked(True)
+        
+        timelog_project = sg.find_one("Project",
+                                      [['id', 'is', 212]],
+                                      ['name'])
+        
+        if timelog_project not in project_list:
+            project_list.insert(0, timelog_project)
+
+        
+        if os.getenv('USER') in ['w10296', 'w10137', 'w10342']:
+            rnd_project = sg.find_one("Project",
+                                      [['id', 'is', 686]],
+                                      ['name'])
+            if rnd_project not in project_list:
+                project_list.insert(1, rnd_project)
+        
+
+        if PYSIDE_VER == 1:
+            filters_menu = QtGui.QMenu()
+            filters_group = QtGui.QActionGroup(self)
+            project_filter = QtGui.QAction('Current Project Tasks', filters_menu,
+                                        checkable=True)
+            project_filter.setData([['project', 'is', '{context.project}']])
+            filters_group.addAction(project_filter)
+            filters_menu.addAction(project_filter)
+            #all_filter = QtGui.QAction('All Tasks', filters_menu,
+            #                           checkable=True)
+            #all_filter.setData([])
+            #filters_group.addAction(all_filter)
+            #filters_menu.addAction(all_filter)
+            #facility_filter = QtGui.QAction('Facility Tasks', filters_menu,
+            #                                checkable=True)
+            #facility_filter.setData([['project.Project.name', 'is', 'Facility']])
+            #filters_group.addAction(facility_filter)
+            #filters_menu.addAction(facility_filter)
+            
+            
+
+            for project_ent in project_list:
+                temp_filter = QtGui.QAction(project_ent['name'], filters_menu,
+                                        checkable=True)
+                temp_filter.setData([['project', 'is', project_ent]])
+                filters_group.addAction(temp_filter)
+                filters_menu.addAction(temp_filter)
+
+            if UI_filters_action:
+                for filter_action in filters_menu.findChildren(QtGui.QAction):
+                    if filter_action.text() == UI_filters_action.text():
+                        filter_action.setChecked(True)
+                        self.filter_project_name = filter_action.text()
+            else:
+                project_filter.setChecked(True)
+            self._ui.filter_btn.setMenu(filters_menu)
+            filters_group.triggered.connect(self._on_filter_changed)
         else:
-            project_filter.setChecked(True)
-        self._ui.filter_btn.setMenu(filters_menu)
-        filters_group.triggered.connect(self._on_filter_changed)
+            self._ui.filter_btn = QtGui.QComboBox(self)
+
+            current_project = sg.find_one("Project", 
+                                          [['id', 'is', self._app.context.project['id']]],
+                                          ['name'])
+            
+            if UI_filters_action:
+                current_project = sg.find_one("Project", 
+                                          [['id', 'is', UI_filters_action['id']]],
+                                          ['name'])
+            
+            if current_project['name'] not in ['RND', '_Timelog']:
+                project_list.insert(0, current_project)
+            else:
+                if current_project in project_list:
+                    project_list.remove(current_project)
+                project_list.insert(0, current_project)
+            
+            for project_ent in project_list:
+                self._ui.filter_btn.addItem(project_ent['name'], project_ent)
+            
+            self._ui.filter_btn.currentIndexChanged.connect(self._on_filter_changed_combo)
+
+    def _on_filter_changed_combo(self):
+        """
+        Slot triggered when the filter menu has been changed for QComboBox.
+
+        :param UI_filters_action: previous selected filter
+        """
+        try:
+            current_index = self._ui.filter_btn.currentIndex()
+            filter_action = self._ui.filter_btn.itemData(current_index)
+            logger.debug("filter changed to {}".format(self._ui.filter_btn.currentText()))
+            logger.debug("filter: {}".format(filter_action))
+            self.parent.createTasksForm(filter_action)
+        except Exception as e:
+            logger.error(e)
 
     def _on_filter_changed(self, filter_action):
         """
@@ -260,7 +353,7 @@ class MyTasksForm(QtGui.QWidget):
             logger.debug("filter changed to {}".format(filter_action.text()))
             logger.debug("filter: {}".format(filter_action.data()))
             self.parent.createTasksForm(filter_action)
-            self.parent.createManagementForm(filter_action)
+            # self.parent.createManagementForm(filter_action)
         except Exception as e:
             logger.error(e)
 

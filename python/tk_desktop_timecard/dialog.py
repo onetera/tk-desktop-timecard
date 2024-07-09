@@ -36,6 +36,12 @@ logger = sgtk.platform.get_logger(__name__)
 task_manager = sgtk.platform.import_framework("tk-framework-shotgunutils", "task_manager")
 shotgun_globals = sgtk.platform.import_framework("tk-framework-shotgunutils", "shotgun_globals")
 
+PYSIDE_VER = repr(QtGui.QWidget)
+if 'PySide2' in PYSIDE_VER:
+    PYSIDE_VER = 2
+else:
+    PYSIDE_VER = 1
+
 
 class AppDialog(QtGui.QWidget):
     """
@@ -71,8 +77,8 @@ class AppDialog(QtGui.QWidget):
         self.user = sgtk.util.get_current_user(self._app.sgtk)
         # self.ui.textBrowser.setText("Hello, %s!" % self.user['firstname'])
         # create my tasks form and my time form:
-        # self.createTasksForm()
-        self.createManagementForm()
+        self.createTasksForm()
+        # self.createManagementForm()
         self.createTimeForm()
         self.createTimelogTable()
         # time summary labels
@@ -93,6 +99,14 @@ class AppDialog(QtGui.QWidget):
             
         QtCore.QTimer.singleShot(0, self._on_refresh_triggered)
 
+        if PYSIDE_VER == 2:
+            font = QtGui.QFont()
+            font.setPointSize(14)
+
+            self.ui.time_sum_label.setFont(font)
+            self.ui.time_sum_today_label.setFont(font)
+            self.ui.time_sum_week_label.setFont(font)
+
     def closeEvent(self, event):
         """
         Executed when the main dialog is closed.
@@ -106,8 +120,8 @@ class AppDialog(QtGui.QWidget):
 
         try:
             ## 탭 두 개 추가시 window과부하 문제로 탭을 없앰
-            # if self._my_tasks_model:
-            #     self._my_tasks_model.destroy()
+            if self._my_tasks_model:
+                self._my_tasks_model.destroy()
             
             # if self._facility_tasks_model:
             #     self._facility_tasks_model.destroy()
@@ -157,15 +171,44 @@ class AppDialog(QtGui.QWidget):
         try:
             self._my_tasks_model = self._build_my_tasks_model(
                 self._app.context.project, UI_filters_action)
+            
+            self._management_model = self._build_management_model(
+                self._app.context.project, UI_filters_action)
+            
+            # refresh tab
+            if UI_filters_action is not None:
+                self.ui.taskTabWidget.clear()
+                if PYSIDE_VER == 1:
+                    self.current_project  = UI_filters_action.text()
+                else:
+                    self.current_project = UI_filters_action['name']
+
+                sg = self._app.context.tank.shotgun
+                project  = sg.find_one("Project",[['name','is',self.current_project]],['name'])
+
+                self._my_tasks_model = self._build_my_tasks_model(
+                    project, UI_filters_action)
+                
+                self._management_model = self._build_management_model(
+                    project, UI_filters_action)
+                    
             self._my_tasks_form = MyTasksForm(self._my_tasks_model,
                                               UI_filters_action,
                                               allow_task_creation=False,
                                               parent=self)
-            # refresh tab
-            if UI_filters_action is not None:
-                self.ui.taskTabWidget.clear()
-                self.current_project  = UI_filters_action.text()
-            self.ui.taskTabWidget.addTab(self._my_tasks_form, "My Tasks")
+            
+            self._management_form = ManagementForm(self._management_model,
+                                            UI_filters_action,
+                                            allow_task_creation=False,
+                                            parent=self)
+            
+            combined_widget = QtGui.QWidget()
+            combined_layout = QtGui.QVBoxLayout(combined_widget)
+            combined_layout.addWidget(self._my_tasks_form)
+            combined_layout.addWidget(self._management_form)
+            combined_widget.setLayout(combined_layout)
+            
+            self.ui.taskTabWidget.addTab(combined_widget, "My Tasks")
         except Exception as e:
             logger.exception("Failed to Load my tasks, because %s \n %s"
                              % (e, traceback.format_exc()))
@@ -182,7 +225,10 @@ class AppDialog(QtGui.QWidget):
             # refresh tab
             if UI_filters_action is not None:
                 self.ui.taskTabWidget.clear()
-                self.current_project = UI_filters_action.text()
+                if PYSIDE_VER == 1:
+                    self.current_project  = UI_filters_action.text()
+                else:
+                    self.current_project = UI_filters_action['name']
                 
                 sg = self._app.context.tank.shotgun
                 project  = sg.find_one("Project",[['name','is',self.current_project]],['name'])
@@ -196,7 +242,7 @@ class AppDialog(QtGui.QWidget):
                                             parent=self)
             self.ui.taskTabWidget.addTab(self._management_form, "Management")
         except Exception as e:
-            logger.exception("Failed to Load my tasks, because %s \n %s"
+            logger.exception("Failed to Load my management, because %s \n %s"
                              % (e, traceback.format_exc()))
 
     def createTimeForm(self):
@@ -242,10 +288,10 @@ class AppDialog(QtGui.QWidget):
         if UI_filters_action is None:
             UI_filters = [['project', 'is', '{context.project}']]
         else:
-            if sys.version_info.major == 2:
+            if PYSIDE_VER == 1:
                 UI_filters = UI_filters_action.data()
             else:
-                UI_filters = UI_filters_action
+                UI_filters = [['project', 'is', UI_filters_action]]
         my_tasks_filters = self._app.get_setting("my_tasks_filters")
         model =ManagementModel(project,
                              self.user,
@@ -278,7 +324,10 @@ class AppDialog(QtGui.QWidget):
         if UI_filters_action is None:
             UI_filters = [['project', 'is', '{context.project}']]
         else:
-            UI_filters = UI_filters_action.data()
+            if PYSIDE_VER == 1:
+                UI_filters = UI_filters_action.data()
+            else:
+                UI_filters = [['project', 'is', UI_filters_action]]
         my_tasks_filters = self._app.get_setting("my_tasks_filters")
         model = MyTasksModel(project,
                              self.user,
@@ -368,8 +417,8 @@ class AppDialog(QtGui.QWidget):
         self._get_time_sum()
 
         ## 탭 두 개 추가시 window과부하 문제로 탭을 없앰
-        # if self._my_tasks_model:
-        #     self._my_tasks_model.async_refresh()
+        if self._my_tasks_model:
+            self._my_tasks_model.async_refresh()
 
         # if self._facility_tasks_model:
         #     self._facility_tasks_model.async_refresh()

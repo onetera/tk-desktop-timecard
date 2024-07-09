@@ -19,7 +19,6 @@ import sgtk
 from sgtk.platform.qt import QtCore, QtGui
 from ..ui.my_tasks_form import Ui_MyTasksForm
 from .management_item_delegate import ManagementItemDelegate
-from ..dump.dump_form import DumpForm
 from ..util import monitor_qobject_lifetime, map_to_source, get_source_model
 from ..entity_proxy_model import EntityProxyModel
 
@@ -33,6 +32,12 @@ if sys.version_info.major == 2:
     import cPickle as pick
 else:
     import pickle as pick
+
+PYSIDE_VER = repr(QtGui.QWidget)
+if 'PySide2' in PYSIDE_VER:
+    PYSIDE_VER = 2
+else:
+    PYSIDE_VER = 1
 
 
 logger = sgtk.platform.get_logger(__name__)
@@ -114,6 +119,7 @@ class ManagementForm(QtGui.QWidget):
         # set up the UI
         self._ui = Ui_MyTasksForm()
         self._ui.setupUi(self)
+        self._ui.filter_btn.hide()
 
         search_label = "Management"
         self._ui.search_ctrl.set_placeholder_text("Search %s" % search_label)
@@ -123,8 +129,7 @@ class ManagementForm(QtGui.QWidget):
         self.task_tree.header().setVisible(False)
         # enable/hide the new task button if we have tasks and task creation
         # is allowed:
-        self._ui.new_task_btn.clicked.connect(self._new_dump_task)
-        # self._ui.new_task_btn.hide()
+        self._ui.new_task_btn.hide()
         # Sets an item delete to show a list of tiles for tasks instead of
         # nodes in a tree.
         self._item_delegate = None
@@ -143,23 +148,11 @@ class ManagementForm(QtGui.QWidget):
         self._ui.verticalLayout.addWidget(self.task_tree)
         # connect up the filter controls:
         self._ui.search_ctrl.search_changed.connect(self._on_search_changed)
+        self._ui.search_ctrl.hide()
         self._show_filters(UI_filters_action)
         # connect context menu
         self.task_tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.task_tree.customContextMenuRequested.connect(self.open_menu)
-    
-    def _new_dump_task(self):
-        # logger.debug("click new_task_btn")
-        if sys.version_info.major == 2:
-            if len(self.filter_project_name) == 0:
-                project_name = self._app.context.project['name']
-            else:
-                project_name = self.filter_project_name
-        else:
-            project_name = self._ui.filter_btn.currentText()
-
-        dump = DumpForm(project_name, parent=self.parent)
-        dump.exec_()
 
     def open_menu(self, position):
         """
@@ -223,7 +216,7 @@ class ManagementForm(QtGui.QWidget):
         'type': 'CustomNonProjectEntity04', 
         'id': 1}
 
-        if sys.version_info.major == 2:
+        if PYSIDE_VER == 1:
             project_name = self.parent.current_project
         else:
             project_name = self._ui.filter_btn.currentText()
@@ -243,11 +236,6 @@ class ManagementForm(QtGui.QWidget):
                 template['entity']['name'] = entity['code']
                 template['content'] = entity['code']
                 template['id'] = entity['id']
-
-                if not ((template['project']['name'] == '_Timelog' and template['content'] in ['H_Dayoff', 'Dayoff', 'Management']) or
-                        (template['project']['name'] != '_Timelog' and template['content'] == 'Work')):
-                    msg_box(template['project']['name'], template['content'])
-                    template = None
                 return template
         return None
 
@@ -273,15 +261,14 @@ class ManagementForm(QtGui.QWidget):
         if timelog_project not in project_list:
             project_list.insert(0, timelog_project)
         
-        if os.getenv('USER') in ['w10296']:
+        if os.getenv('USER') in ['w10296', 'w10137', 'w10342']:
             rnd_project = sg.find_one("Project",
                                       [['id', 'is', 686]],
                                       ['name'])
             if rnd_project not in project_list:
-                project_list.insert(0, rnd_project)
+                project_list.insert(1, rnd_project)            
 
-
-        if sys.version_info.major == 2:
+        if PYSIDE_VER == 1:
             filters_menu = QtGui.QMenu()
             filters_group = QtGui.QActionGroup(self)
             project_filter = QtGui.QAction('Current Project Tasks', filters_menu,
@@ -319,16 +306,45 @@ class ManagementForm(QtGui.QWidget):
 
         else:
             self._ui.filter_btn = QtGui.QComboBox(self)
-
+            
             current_project = sg.find_one("Project", 
                                           [['id', 'is', self._app.context.project['id']]],
                                           ['name'])
             
-            project_list.insert(0, current_project)
+            if UI_filters_action:
+                current_project = sg.find_one("Project", 
+                                          [['id', 'is', UI_filters_action['id']]],
+                                          ['name'])
             
+            if current_project['name'] not in ['RND', '_Timelog']:
+                project_list.insert(0, current_project)
+            else:
+                if current_project in project_list:
+                    project_list.remove(current_project)
+                project_list.insert(0, current_project)
+
             for project_ent in project_list:
                 self._ui.filter_btn.addItem(project_ent['name'], project_ent)
+
+            self._ui.filter_btn.currentIndexChanged.connect(self._on_filter_changed_combo)
+
+        self._ui.filter_btn.hide()
                 
+    def _on_filter_changed_combo(self):
+        """
+        Slot triggered when the filter menu has been changed for QComboBox.
+
+        :param UI_filters_action: previous selected filter
+        """
+        try:
+            current_index = self._ui.filter_btn.currentIndex()
+            filter_action = self._ui.filter_btn.itemData(current_index)
+            logger.debug("filter changed to {}".format(self._ui.filter_btn.currentText()))
+            logger.debug("filter: {}".format(filter_action))
+            self.parent.createTasksForm(filter_action)
+            # self.parent.createManagementForm(filter_action)
+        except Exception as e:
+            logger.error(e)
 
     def _on_filter_changed(self, filter_action):
         """
@@ -339,8 +355,8 @@ class ManagementForm(QtGui.QWidget):
         try:
             logger.debug("filter changed to {}".format(filter_action.text()))
             logger.debug("filter: {}".format(filter_action.data()))
-            # self.parent.createTasksForm(filter_action)
-            self.parent.createManagementForm(filter_action)
+            self.parent.createTasksForm(filter_action)
+            # self.parent.createManagementForm(filter_action)
         except Exception as e:
             logger.error(e)
 
