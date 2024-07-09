@@ -57,13 +57,13 @@ class ExcelLoad:
                 head_labels[idx] = HEADER_MAP[label]
 
         if len(head_labels) != len(MODEL_KEYS.keys()):
-            QtGui.QMessageBox.critical(None, "Error", u"excel file의 양식과 로드 된 파일의 행 갯수가 다릅니다.")
+            QtGui.QMessageBox.critical(None, "Error", "The number of rows in the loaded file does not match the format of the Excel file.")
             wb.close()
             return False
 
         for idx, key in enumerate(MODEL_KEYS.keys()):
             if head_labels[idx].lower() != key.lower():
-                QtGui.QMessageBox.critical(None, "Error", u"{0}번째 행의 '{1}'의 값이 '{2}'가 아닙니다.".format(idx+1 ,head_labels[idx], key))
+                QtGui.QMessageBox.critical(None, "Error", "The value of '{0}' in row '{1}' is not '{2}'.".format(head_labels[idx], idx+1, key))
                 wb.close()
                 return False
         

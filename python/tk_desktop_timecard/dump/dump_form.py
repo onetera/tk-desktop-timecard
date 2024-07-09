@@ -89,7 +89,7 @@ class DumpForm(QtGui.QDialog):
             calen_delegate = CalendarDelegate(self)
             self._ui.seq_model_view.setItemDelegateForColumn(4, calen_delegate)
         else:
-            return QtGui.QMessageBox.critical(self, "Error", u"'.xlsx 혹은 .xls'파일을 선택해주세요.")
+            return QtGui.QMessageBox.critical(self, "Error", "Please select an '.xlsx' or '.xls' file.")
 
 
     def _check_all(self):
@@ -124,7 +124,7 @@ class DumpForm(QtGui.QDialog):
         if project == "_Timelog":
             for row in checked_rows:
                 if project != str(self._model.data(self._model.index(row, 6), QtCore.Qt.DisplayRole)):
-                    return QtGui.QMessageBox.critical(self, "Error", u"'{0}'행이 '{1}'이 아닙니다.".format(row+1, project))
+                    return QtGui.QMessageBox.critical(self, "Error", "The row '{0}' is not '{1}'".format(row+1, project))
                 
                 user = str(self._model.data(self._model.index(row, 1), QtCore.Qt.DisplayRole))
                 user_id = self._sg.find_one("HumanUser",[['name', 'is', user]])
@@ -150,12 +150,12 @@ class DumpForm(QtGui.QDialog):
                                 
                     self.result_list.append(result)
                 else:
-                    return QtGui.QMessageBox.critical(self, "Error", u"'Work'와 'Management'만 입력이 가능합니다.")
+                    return QtGui.QMessageBox.critical(self, "Error", "Only 'Work' and 'Management' are allowed.")
 
         else:
             for row in checked_rows:
                 if project != str(self._model.data(self._model.index(row, 6), QtCore.Qt.DisplayRole)):
-                    return QtGui.QMessageBox.critical(self, "Error", u"'{0}'행이 '{1}'이 아닙니다.".format(row+1, project))
+                    return QtGui.QMessageBox.critical(self, "Error", "The row '{0}' is not '{1}'".format(row+1, project))
                 
                 shot = str(self._model.data(self._model.index(row, 3), QtCore.Qt.DisplayRole))
                 user = str(self._model.data(self._model.index(row, 1), QtCore.Qt.DisplayRole))
@@ -184,7 +184,7 @@ class DumpForm(QtGui.QDialog):
                         self.result_list.append(result)
 
                     else:
-                        return QtGui.QMessageBox.critical(self, "Error", u"'Work'와 'Management'만 입력이 가능합니다.")
+                        return QtGui.QMessageBox.critical(self, "Error", "Only 'Work' and 'Management' are allowed.")
 
                 else: 
                     shot_asset = str(self._model.data(self._model.index(row, 3), QtCore.Qt.DisplayRole))
@@ -195,14 +195,14 @@ class DumpForm(QtGui.QDialog):
                             break
 
                     if not shot_asset_id:
-                        return QtGui.QMessageBox.critical(self, "Error", u"'{}'은 없는 Shot/Asset 입니다.".format(shot_asset))
+                        return QtGui.QMessageBox.critical(self, "Error", "'{}' is not an existing Shot/Asset.".format(shot_asset))
                     else:
                         task = str(self._model.data(self._model.index(row, 2), QtCore.Qt.DisplayRole))
                         task_id = self._sg.find_one("Task", [["entity", "is", shot_asset_id],["content", "is", task], 
                                                              ["task_assignees", "is", user_id]])
 
                         if not task_id:
-                            return QtGui.QMessageBox.critical(self, "Error", u"'{0}'가 '{1}' Task에 assign되지 않았습니다.".format(task, user))
+                            return QtGui.QMessageBox.critical(self, "Error", "'{0}' has not been assigned to the '{1}' task.".format(user, task))
                         else:
                             date = str(self._model.data(self._model.index(row, 4), QtCore.Qt.DisplayRole))
                             hour = str(self._model.data(self._model.index(row, 5), QtCore.Qt.DisplayRole))
