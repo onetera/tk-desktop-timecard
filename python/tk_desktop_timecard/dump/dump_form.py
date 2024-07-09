@@ -32,6 +32,9 @@ class DumpForm(QtGui.QDialog):
         self.project_name = project_name
 
         self._ui.upload.setEnabled(False)
+        self._ui.add_btn.setEnabled(False)
+        self._ui.del_btn.setEnabled(False)
+        self._ui.task_check.setEnabled(False)
 
         self.load_flag = False
 
@@ -46,28 +49,47 @@ class DumpForm(QtGui.QDialog):
 
 
     def _set_path(self):
+        self._ui.add_btn.setEnabled(False)
+        self._ui.del_btn.setEnabled(False)
+        self._ui.task_check.setEnabled(False)
+        self._ui.upload.setEnabled(False)
+
         home_path = os.path.expanduser('~')
         filename, _ = QtGui.QFileDialog().getOpenFileName(None,
                                                                'Import ExcelFile directory',
                                                                home_path,
                                                                filter="Excel Files (*.xlsx *.xls)")
+        if os.path.splitext(filename)[-1] == '.xls':
+            os.rename(filename,
+                      os.path.splitext(filename)[0] + '.xlsx')
+            
+            filename = os.path.splitext(filename)[0] + '.xlsx'
         self._ui.lineEdit.setText(filename)
     
 
     def _load_excel(self):
         path = self._ui.lineEdit.text()
-        self._model = DumpTableModel(self.project_name, ExcelLoad(path).row_infos)
+        if path:
+            excel_load = ExcelLoad(path)
+            self._model = DumpTableModel(self.project_name, excel_load.row_infos)
 
-        self._ui.seq_model_view.setModel(None)
+            self._ui.seq_model_view.setModel(None)
 
-        self._ui.seq_model_view.setModel(self._model)
-        self._ui.seq_model_view.horizontalHeader().setStretchLastSection(True)
+            if excel_load.confirm_sync:
+                self._ui.seq_model_view.setModel(self._model)
+            self._ui.seq_model_view.horizontalHeader().setStretchLastSection(True)
 
-        combo_delegate = ComboBoxDelegate(self)
-        self._ui.seq_model_view.setItemDelegateForColumn(2, combo_delegate)
+            self._ui.add_btn.setEnabled(True)
+            self._ui.del_btn.setEnabled(True)
+            self._ui.task_check.setEnabled(True)
 
-        calen_delegate = CalendarDelegate(self)
-        self._ui.seq_model_view.setItemDelegateForColumn(4, calen_delegate)
+            combo_delegate = ComboBoxDelegate(self)
+            self._ui.seq_model_view.setItemDelegateForColumn(2, combo_delegate)
+
+            calen_delegate = CalendarDelegate(self)
+            self._ui.seq_model_view.setItemDelegateForColumn(4, calen_delegate)
+        else:
+            return QtGui.QMessageBox.critical(self, "Error", u"'.xlsx 혹은 .xls'파일을 선택해주세요.")
 
 
     def _check_all(self):
@@ -84,6 +106,7 @@ class DumpForm(QtGui.QDialog):
 
     def _add_log(self):
         self._model.add_Item()
+        self._ui.del_btn.setEnabled(True)
         self._ui.upload.setEnabled(False)
 
 
@@ -137,7 +160,7 @@ class DumpForm(QtGui.QDialog):
                 shot = str(self._model.data(self._model.index(row, 3), QtCore.Qt.DisplayRole))
                 user = str(self._model.data(self._model.index(row, 1), QtCore.Qt.DisplayRole))
                 user_id = self._sg.find_one("HumanUser",[['name', 'is', user]])
-                if len(shot) == 0:
+                if shot == 'None':
                     task = str(self._model.data(self._model.index(row, 2), QtCore.Qt.DisplayRole))
                     if task.lower() in ["work", "management"]:                    
                         task_id = self._sg.find_one("CustomNonProjectEntity04", [['code', 'is', task]])

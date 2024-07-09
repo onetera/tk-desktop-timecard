@@ -98,13 +98,13 @@ class DumpTableModel(QtCore.QAbstractTableModel):
 
     def add_Item(self):
         self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), self.rowCount())
-        self.arraydata.append([False, '', '', '', QtCore.QDate(2024, 4, 30).toString("yyyy-MM-dd"), '0', self.project_name, ''])
+        self.arraydata.append([QtGui.QCheckBox(), '', '', '', QtCore.QDate(2024, 4, 30).toString("yyyy-MM-dd"), '0', self.project_name, ''])
         self.endInsertRows()
 
 
     def del_Item(self):
         for row in reversed(range(len(self.arraydata))):
-            if self.arraydata[row][0] == QtCore.Qt.Checked:
+            if self.arraydata[row][0].isChecked():
                 self.beginRemoveRows(QtCore.QModelIndex(), row, row)
                 self.arraydata.pop(row)
                 self.endRemoveRows()
@@ -113,14 +113,7 @@ class DumpTableModel(QtCore.QAbstractTableModel):
     def get_checked_rows(self):
         checked_rows = []
         for row in range(self.rowCount()):
-            if self.arraydata[row][0]:
+            if self.arraydata[row][0].isChecked():
                 checked_rows.append(row)
         return checked_rows
 
-
-    def has_specific_values_in_column(self, column, values):
-        found = False
-        for row in range(self.rowCount()):
-            if self.arraydata[row][column] in values:
-                found = True
-            return found

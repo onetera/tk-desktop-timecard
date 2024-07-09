@@ -319,7 +319,8 @@ class MyTasksForm(QtGui.QWidget):
             if current_project['name'] not in ['RND', '_Timelog']:
                 project_list.insert(0, current_project)
             else:
-                project_list.remove(current_project)
+                if current_project in project_list:
+                    project_list.remove(current_project)
                 project_list.insert(0, current_project)
             
             for project_ent in project_list:
