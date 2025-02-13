@@ -29,8 +29,11 @@ class Ui_MyTasksForm(object):
         self.horizontalLayout.addWidget(self.filter_btn)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
+        self.vacation_btn = QtGui.QPushButton(MyTasksForm)
+        self.vacation_btn.setObjectName("vacation")
         self.new_task_btn = QtGui.QPushButton(MyTasksForm)
         self.new_task_btn.setObjectName("new_task_btn")
+        self.horizontalLayout.addWidget(self.vacation_btn)
         self.horizontalLayout.addWidget(self.new_task_btn)
         self.verticalLayout.addLayout(self.horizontalLayout)
         self.horizontalLayout_2 = QtGui.QHBoxLayout()
@@ -51,6 +54,7 @@ class Ui_MyTasksForm(object):
     def retranslateUi(self, MyTasksForm):
         MyTasksForm.setWindowTitle(QtGui.QApplication.translate("MyTasksForm", "Form", None, QtGui.QApplication.UnicodeUTF8))
         self.filter_btn.setText(QtGui.QApplication.translate("MyTasksForm", "Filter", None, QtGui.QApplication.UnicodeUTF8))
+        self.vacation_btn.setText(QtGui.QApplication.translate("MyTasksForm", "Day off/Half off", None, QtGui.QApplication.UnicodeUTF8))
         self.new_task_btn.setText(QtGui.QApplication.translate("MyTasksForm", "Add Past Log", None, QtGui.QApplication.UnicodeUTF8))
 
 from ..framework_qtwidgets import SearchWidget

@@ -22,6 +22,7 @@ from .my_task_item_delegate import MyTaskItemDelegate
 from ..dump.dump_form import DumpForm
 from ..util import monitor_qobject_lifetime, map_to_source, get_source_model
 from ..entity_proxy_model import EntityProxyModel
+from ..vacation.my_vacation import MyVacation
 
 from ..my_time.my_time_model import timelogEvent
 from ..my_time.new_timelog_form import NewTimeLogForm
@@ -136,6 +137,7 @@ class MyTasksForm(QtGui.QWidget):
         #     self._ui.new_task_btn.setEnabled(False)
         # else:
         #     self._ui.new_task_btn.hide()
+        self._ui.vacation_btn.clicked.connect( self.vacation_check )
         self._ui.new_task_btn.clicked.connect(self._new_dump_task)
         # Sets an item delete to show a list of tiles for tasks instead of
         # nodes in a tree.
@@ -174,6 +176,12 @@ class MyTasksForm(QtGui.QWidget):
 
         dump = DumpForm(project_name, parent=self.parent)
         dump.exec_()
+
+    def vacation_check( self ):
+        print( '\n\n' )
+        print( 'vacation check' )
+        vacation =MyVacation( self )
+        vacation.exec_()
 
     def open_menu(self, position):
         """

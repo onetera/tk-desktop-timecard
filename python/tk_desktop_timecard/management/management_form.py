@@ -120,6 +120,7 @@ class ManagementForm(QtGui.QWidget):
         self._ui = Ui_MyTasksForm()
         self._ui.setupUi(self)
         self._ui.filter_btn.hide()
+        self._ui.vacation_btn.hide()
 
         search_label = "Management"
         self._ui.search_ctrl.set_placeholder_text("Search %s" % search_label)
