@@ -36,7 +36,10 @@ class MyVacation( CalendarApp ):
         vacation_type = 'Dayoff' if self.day_rd.isChecked() else 'H_Dayoff'
         sel_dates     = self.calendar.get_selected_dates()
 
-        project = self.parent._app.context.project
+        #project = self.parent._app.context.project
+        
+        project = sg.find_one( 'Project', [['name' , 'is' , '_Timelog']] , [] )
+
         user = self.parent._app.context.user
         
         mana = sg.find_one( 
