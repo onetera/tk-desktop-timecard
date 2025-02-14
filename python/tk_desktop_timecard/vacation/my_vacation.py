@@ -48,7 +48,7 @@ class MyVacation( CalendarApp ):
                     ['code'] 
                     )
 
-        desc = 'Half off' if vacation_type == 'H_Dayoff' else 'Dayoff'
+        desc = 'Half off' if vacation_type == 'H_Dayoff' else 'Day off'
 
         for sel_date in sel_dates:
             vacation_date = datetime.date( sel_date.year(), sel_date.month() , sel_date.day() )
